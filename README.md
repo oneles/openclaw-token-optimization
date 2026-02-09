@@ -1,46 +1,44 @@
-# OpenClaw Token 优化方案
+# 🦞 OpenClaw Token 消耗优化指南
 
-**English** | [中文](#中文说明)
+这是一份基于 OpenClaw 原生 API 功能的 Token 消耗优化完整方案，旨在帮助用户在不牺牲智能体性能的前提下，大幅降低 API 使用成本。
 
-🦞 A comprehensive guide to optimize token consumption in OpenClaw using native API features.
+![Token 优化仪表盘](./screenshots/dashboard.png)
 
-![Token Optimization Dashboard](./screenshots/dashboard.png)
+## 📊 核心优化指标
 
-## Key Metrics
+| 指标 | 优化前 | 优化后 | 改善幅度 |
+|------|--------|--------|------|
+| **平均上下文占用** | 128K tokens | 70K tokens | **-45%** |
+| **缓存写入成本** | $0.30/会话 | $0.05/会话 | **-83%** |
+| **嵌入 API 调用** | ~500次/天 | 0 (本地) | **-100%** |
+| **平均响应延迟** | 3.5s | 2.1s | **-40%** |
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Average Context | 128K tokens | 70K tokens | **-45%** |
-| Cache Write Cost | $0.30/session | $0.05/session | **-83%** |
-| Embedding API Calls | ~500/day | 0 (local) | **-100%** |
-| Response Latency | 3.5s | 2.1s | **-40%** |
+## ✨ 主要功能
 
-## Features
+- 📊 **可视化仪表盘** - 交互式图表展示优化前后指标对比
+- 📋 **详细优化指南** - 包含上下文修剪、会话压缩等核心策略
+- 🔧 **开箱即用配置** - 提供可直接复制的 JSON 配置模板
+- 📈 **成本节省分析** - 分类别详细拆解节省金额
 
-- 📊 **Visual Dashboard** - Interactive charts comparing before/after metrics
-- 📋 **Detailed Guide** - Step-by-step optimization strategies
-- 🔧 **Ready-to-use Configs** - Copy-paste JSON configurations
-- 📈 **Cost Analysis** - Breakdown of savings by category
+## 🚀 快速开始
 
-## Quick Start
-
-### Option 1: Standalone Server
+### 方式 1：使用本地服务器查看仪表盘
 
 ```bash
 git clone https://github.com/oneles/openclaw-token-optimization.git
 cd openclaw-token-optimization
 node server.js
-# Open http://127.0.0.1:8086/
+# 访问地址：http://127.0.0.1:8086/
 ```
 
-### Option 2: Direct File Access
+### 方式 2：直接查看
 
-Just open `index.html` in your browser.
+你也可以直接在浏览器中打开 `index.html` 文件。
 
-## Optimization Strategies
+## 🛠️ 核心优化策略
 
-### 1. Context Pruning
-Reduce historical tool outputs sent to the model.
+### 1. 上下文修剪 (Context Pruning)
+减少发送给模型的历史工具结果，通过 `cache-ttl` 模式智能裁剪冗余信息。
 
 ```json5
 {
@@ -57,8 +55,8 @@ Reduce historical tool outputs sent to the model.
 }
 ```
 
-### 2. Session Compaction
-Auto-summarize long conversations.
+### 2. 会话压缩 (Compaction)
+当对话过长时自动进行摘要总结，确保上下文窗口始终处于健康状态。
 
 ```json5
 {
@@ -74,8 +72,8 @@ Auto-summarize long conversations.
 }
 ```
 
-### 3. Cache Optimization
-Keep prompt cache "hot" with heartbeats.
+### 3. 缓存优化 (Prompt Caching)
+利用 Anthropic 等提供商的提示词缓存功能，通过心跳保持缓存“热度”。
 
 ```json5
 {
@@ -92,8 +90,8 @@ Keep prompt cache "hot" with heartbeats.
 }
 ```
 
-### 4. Local Memory Search
-Eliminate remote embedding API calls.
+### 4. 本地记忆搜索 (Local Memory)
+完全切换到本地嵌入模型，消除对远程 Embedding API 的依赖。
 
 ```json5
 {
@@ -109,70 +107,32 @@ Eliminate remote embedding API calls.
 }
 ```
 
-## Monitoring Commands
+## 🔍 监控与审计命令
+
+在聊天中使用以下斜杠命令实时掌控消耗：
 
 ```bash
-/status           # View current token usage + estimated cost
-/context list     # See context composition details
-/context detail   # Deep breakdown of each tool/file size
-/compact          # Compress current session immediately
-/usage tokens     # Enable per-message usage display
-/usage full       # Show detailed costs (with $)
+/status           # 查看当前 token 使用量与预估成本
+/context list     # 查看上下文构成详情（文件、工具、历史）
+/context detail   # 深入分解每个工具和文件的 token 占比
+/compact          # 立即手动压缩当前会话
+/usage tokens     # 开启每条消息的使用量回显
+/usage full       # 显示详细成本统计（含美元金额）
 ```
 
-## Screenshots
+## 📸 可视化对比
 
-### Token Distribution Comparison
-![Distribution](./screenshots/distribution.png)
+### Token 分布对比
+![Token 分布对比](./screenshots/distribution.png)
 
-### Cost Savings Analysis
-![Cost](./screenshots/cost.png)
+### 成本节省分析
+![成本节省分析](./screenshots/cost.png)
 
----
-
-# 中文说明
-
-🦞 基于 OpenClaw 原生 API 功能的 Token 消耗优化完整指南。
-
-## 关键指标
-
-| 指标 | 优化前 | 优化后 | 改善 |
-|------|--------|--------|------|
-| 平均上下文 | 128K tokens | 70K tokens | **-45%** |
-| 缓存写入成本 | $0.30/会话 | $0.05/会话 | **-83%** |
-| 嵌入 API 调用 | ~500次/天 | 0 (本地) | **-100%** |
-| 响应延迟 | 3.5s | 2.1s | **-40%** |
-
-## 快速开始
-
-```bash
-git clone https://github.com/oneles/openclaw-token-optimization.git
-cd openclaw-token-optimization
-node server.js
-# 打开 http://127.0.0.1:8086/
-```
-
-## 优化策略
-
-1. **上下文修剪** - 减少发送给模型的历史工具结果
-2. **会话压缩** - 长会话自动摘要
-3. **缓存优化** - 使用心跳保持缓存"热"
-4. **本地记忆搜索** - 消除远程嵌入 API 调用
-
-## 监控命令
-
-```bash
-/status           # 查看当前 token 使用量
-/context list     # 查看上下文构成
-/compact          # 立即压缩会话
-/usage tokens     # 启用使用量显示
-```
-
-## License
+## 许可证
 
 MIT
 
-## Related Projects
+## 相关项目
 
-- [OpenClaw](https://github.com/openclaw/openclaw) - The AI assistant framework
-- [OpenClaw Models UI](https://github.com/oneles/openclaw-models-ui) - Visual model priority manager
+- [OpenClaw](https://github.com/openclaw/openclaw) - 核心智能体框架
+- [OpenClaw Models UI](https://github.com/oneles/openclaw-models-ui) - 可视化模型优先级管理器
