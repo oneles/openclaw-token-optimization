@@ -1,44 +1,48 @@
-# 🦞 OpenClaw Token 消耗优化指南
+# 🦞 OpenClaw Token 消耗一键优化预设
 
-这是一份基于 OpenClaw 原生 API 功能的 Token 消耗优化完整方案，旨在帮助用户在不牺牲智能体性能的前提下，大幅降低 API 使用成本。
+这是一个为 OpenClaw 准备的高性能、低成本配置预设。通过应用本方案，你可以直接在底层启用激进的上下文裁剪、缓存保持和本地搜索策略。
 
-![Token 优化仪表盘](./screenshots/dashboard.png)
+### 💰 优化效果预览
+通过这一套组合拳，我们实现了：
+- **Token 消耗直降 45%**
+- **Anthropic 缓存成本降低 83%**
+- **Embedding API 支出归零**
 
-## 📊 核心优化指标
+![优化效果展示](./screenshots/dashboard.png)
 
-| 指标 | 优化前 | 优化后 | 改善幅度 |
-|------|--------|--------|------|
-| **平均上下文占用** | 128K tokens | 70K tokens | **-45%** |
-| **缓存写入成本** | $0.30/会话 | $0.05/会话 | **-83%** |
-| **嵌入 API 调用** | ~500次/天 | 0 (本地) | **-100%** |
-| **平均响应延迟** | 3.5s | 2.1s | **-40%** |
+---
 
-## ✨ 主要功能
+## 🚀 一键应用方案
 
-- 📊 **可视化仪表盘** - 交互式图表展示优化前后指标对比
-- 📋 **详细优化指南** - 包含上下文修剪、会话压缩等核心策略
-- 🔧 **开箱即用配置** - 提供可直接复制的 JSON 配置模板
-- 📈 **成本节省分析** - 分类别详细拆解节省金额
-
-## 🚀 快速开始
-
-### 方式 1：使用本地服务器查看仪表盘
+只需一行命令，即可将本仓库的最佳优化实践应用到你的 `~/.openclaw/openclaw.json` 中：
 
 ```bash
-git clone https://github.com/oneles/openclaw-token-optimization.git
-cd openclaw-token-optimization
-node server.js
-# 访问地址：http://127.0.0.1:8086/
+curl -sSL https://raw.githubusercontent.com/oneles/openclaw-token-optimization/main/apply-preset.js | node
 ```
 
-### 方式 2：直接查看
+*注意：应用后请运行 `openclaw gateway restart` 重启网关。*
 
-你也可以直接在浏览器中打开 `index.html` 文件。
+---
 
-## 🛠️ 核心优化策略
+## 🛠️ 包含的四大核心策略
 
-### 1. 上下文修剪 (Context Pruning)
-减少发送给模型的历史工具结果，通过 `cache-ttl` 模式智能裁剪冗余信息。
+### 1. 激进上下文修剪 (Context Pruning)
+缩短 TTL 至 **5分钟**。系统会更频繁地清理内存中积累的工具输出，显著降低发送给 LLM 的 Context 长度。
+
+### 2. 智能会话压缩 (Compaction)
+预留 **20,000 Tokens** 缓冲空间，并开启压缩前的 **Memory Flush**。确保长对话不会爆内存，且关键信息会被自动持久化。
+
+### 3. 提示词缓存保活 (Prompt Caching)
+将心跳间隔设定为 **55分钟**。这能让 Anthropic 等提供商的缓存（通常 1 小时过期）永远处于激活状态，重复对话成本降低 **90%**。
+
+### 4. 零成本本地搜索 (Local Memory)
+默认启用 **Local Embedding** 提供商。完全消除语义搜索对远程 API 的依赖，保护隐私的同时省下每一分钱。
+
+---
+
+## 🔍 如何手动配置？
+
+如果你想手动微调，以下是应用后的核心配置部分：
 
 ```json5
 {
@@ -49,54 +53,15 @@ node server.js
         "ttl": "5m",
         "softTrimRatio": 0.3,
         "hardClearRatio": 0.5
-      }
-    }
-  }
-}
-```
-
-### 2. 会话压缩 (Compaction)
-当对话过长时自动进行摘要总结，确保上下文窗口始终处于健康状态。
-
-```json5
-{
-  "agents": {
-    "defaults": {
+      },
       "compaction": {
         "mode": "safeguard",
         "reserveTokensFloor": 20000,
         "memoryFlush": { "enabled": true }
-      }
-    }
-  }
-}
-```
-
-### 3. 缓存优化 (Prompt Caching)
-利用 Anthropic 等提供商的提示词缓存功能，通过心跳保持缓存“热度”。
-
-```json5
-{
-  "agents": {
-    "defaults": {
-      "heartbeat": { "every": "55m" },
-      "models": {
-        "anthropic/claude-opus-4-5": {
-          "params": { "cacheRetention": "long" }
-        }
-      }
-    }
-  }
-}
-```
-
-### 4. 本地记忆搜索 (Local Memory)
-完全切换到本地嵌入模型，消除对远程 Embedding API 的依赖。
-
-```json5
-{
-  "agents": {
-    "defaults": {
+      },
+      "heartbeat": {
+        "every": "55m"
+      },
       "memorySearch": {
         "provider": "local",
         "fallback": "none",
@@ -107,32 +72,14 @@ node server.js
 }
 ```
 
-## 🔍 监控与审计命令
-
-在聊天中使用以下斜杠命令实时掌控消耗：
-
-```bash
-/status           # 查看当前 token 使用量与预估成本
-/context list     # 查看上下文构成详情（文件、工具、历史）
-/context detail   # 深入分解每个工具和文件的 token 占比
-/compact          # 立即手动压缩当前会话
-/usage tokens     # 开启每条消息的使用量回显
-/usage full       # 显示详细成本统计（含美元金额）
-```
-
-## 📸 可视化对比
-
-### Token 分布对比
-![Token 分布对比](./screenshots/distribution.png)
-
-### 成本节省分析
-![成本节省分析](./screenshots/cost.png)
-
-## 许可证
-
-MIT
+---
 
 ## 相关项目
+- [OpenClaw 官方仓库](https://github.com/openclaw/openclaw)
+- [核心优化 PR #12425](https://github.com/openclaw/openclaw/pull/12425)
 
-- [OpenClaw](https://github.com/openclaw/openclaw) - 核心智能体框架
-- [OpenClaw Models UI](https://github.com/oneles/openclaw-models-ui) - 可视化模型优先级管理器
+## 许可证
+MIT
+
+---
+*Created by 森哥 (oneles) | 2026-02-09*
